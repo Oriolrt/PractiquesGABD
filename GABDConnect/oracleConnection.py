@@ -14,13 +14,11 @@ import struct
 from getpass import getpass
 import logging
 import pandas as pd
-import oracleDB
+import oracledb
 from sshtunnel import SSHTunnelForwarder
 
+from . import AbsConnection as AC
 
-
-import AbsConnection as AC
-import utils as u
 
 
 
