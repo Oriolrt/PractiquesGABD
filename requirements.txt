@@ -1,0 +1,7 @@
+oracleDB
+pymongo
+sshtunnel
+scikit-learn
+tqdm
+matplotlib
+pandas
