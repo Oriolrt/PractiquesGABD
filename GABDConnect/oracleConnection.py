@@ -33,7 +33,9 @@ class oracleConnection(AC.AbsConnection):
     '''
         Constructor
         '''
+    params['port'] = params.pop('port', 1521)
     super(oracleConnection, self).__init__(**params)
+
     self.__serviceName=params.pop('serviceName','orcl')
 
     self.__cursor = None
