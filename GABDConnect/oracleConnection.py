@@ -90,6 +90,7 @@ class oracleConnection(AC.AbsConnection):
     try:
       self.conn.close()
       if self.server is not None:  self.server.stop()
+      logging.warning('Database connection closed.')
     except oracledb.DatabaseError:
       logging.warning('Database connection already closed')
 
