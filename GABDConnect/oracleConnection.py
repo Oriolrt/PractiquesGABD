@@ -42,7 +42,7 @@ class oracleConnection(AC.AbsConnection):
     try:
       self.__cursor.callproc("dbms_output.enable")
       return self.__cursor
-    except cx_Oracle.DatabaseError:
+    except oracledb.DatabaseError:
       logging.warning('Database connection already closed')
 
 
@@ -81,7 +81,7 @@ class oracleConnection(AC.AbsConnection):
     else:
       DSN = "{}/{}@{}:{}/{}".format(self.user, self.pwd, self.hostname, self.port,self.__serviceName)
 
-    self.conn = cx_Oracle.connect(DSN)
+    self.conn = oracledb.connect(DSN)
     self.__cursor = self.conn.cursor()
 
 
@@ -90,7 +90,7 @@ class oracleConnection(AC.AbsConnection):
     try:
       self.conn.close()
       if self.server is not None:  self.server.stop()
-    except cx_Oracle.DatabaseError:
+    except oracledb.DatabaseError:
       logging.warning('Database connection already closed')
 
 
@@ -116,8 +116,8 @@ class oracleConnection(AC.AbsConnection):
 
   def _showMessages(self):
 
-    statusVar = self.cursor.var(cx_Oracle.NUMBER)
-    lineVar = self.cursor.var(cx_Oracle.STRING)
+    statusVar = self.cursor.var(oracledb.NUMBER)
+    lineVar = self.cursor.var(oracledb.STRING)
     while True:
       self.cursor.callproc("dbms_output.get_line", (lineVar, statusVar))
       if statusVar.getvalue() != 0:
