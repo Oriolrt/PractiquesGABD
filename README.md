@@ -9,5 +9,5 @@ Cal indicar les següents dades:
 - usuari d'oracle: el vostre usuari
 - contrasenya d'oracle: la vostra contrasenya
 
-## Connexió per ssh
+
 
