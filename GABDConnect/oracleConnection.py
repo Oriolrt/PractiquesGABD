@@ -61,21 +61,30 @@ class oracleConnection(AC.AbsConnection):
     if self.pwd is None:
       self.pwd = getpass(prompt="Password de l'usuari {} d'Oracle: ".format(self.user))
 
+    DSN = "{}/{}@localhost:{}/{}".format(self.user, self.pwd, ssh_data['port'], self.__serviceName)
+
     if ssh_data is not None:
-      if "pwd" in ssh_data:
-        if ssh_data["pwd"] == "" or ssh_data["pwd"] is None:
-          ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
+      if "id_key" in ssh_data:
+        self.server = SSHTunnelForwarder((ssh_data["ssh"], int(ssh_data['port'])),
+                                         ssh_username=ssh_data["user"],
+                                         ssh_pkey=ssh_data["id_key"],
+                                         remote_bind_address=(self.hostname, int(self.port)),
+                                         local_bind_address=("", int(ssh_data['port']))
+                                         )
       else:
-        ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
+        if "pwd" in ssh_data:
+          if ssh_data["pwd"] == "" or ssh_data["pwd"] is None:
+            ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
+        else:
+          ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
 
-      DSN = "{}/{}@localhost:{}/{}".format(self.user, self.pwd, ssh_data['port'], self.__serviceName)
-
-      self.server = SSHTunnelForwarder((ssh_data["ssh"], int(ssh_data['port'])),
+        self.server = SSHTunnelForwarder((ssh_data["ssh"], int(ssh_data['port'])),
                                        ssh_username=ssh_data["user"],
                                        ssh_password=ssh_data["pwd"],
                                        remote_bind_address=(self.hostname, int(self.port)),
                                        local_bind_address=("", int(ssh_data['port']))
                                        )
+
 
       self.server.start()
 
@@ -83,8 +92,11 @@ class oracleConnection(AC.AbsConnection):
     else:
       DSN = "{}/{}@{}:{}/{}".format(self.user, self.pwd, self.hostname, self.port,self.__serviceName)
 
-    self.conn = oracledb.connect(DSN)
-    self.__cursor = self.conn.cursor()
+    try:
+      self.conn = oracledb.connect(DSN)
+      self.__cursor = self.conn.cursor()
+    except oracledb.DatabaseError:
+      self.server.stop()
 
 
 
