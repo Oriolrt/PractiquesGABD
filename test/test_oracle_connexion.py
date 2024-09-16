@@ -32,9 +32,9 @@ class OracleConnectTestCase(unittest.TestCase):
 
   def test_tunnel_shh_key(self):
     GRUP = "grup00"
-    SSH_USER = os.environ["GATEWAY_USER"]
-    ssh_tunnel = os.environ["GATEWAY"]
-    port = os.environ["GATEWAY_PORT"]
+    ssh_tunnel = os.environ["SSH_TUNNEL"]
+    SSH_USER = os.environ["SSH_USER"]
+    port = os.environ["SSH_PORT"]
 
 
     if not os.path.isfile(f"../dev_keys/id_{SSH_USER}"):
