@@ -1,109 +1,200 @@
 # -*- coding: utf-8 -*-
-u'''
+u"""
 Created on Jun 12, 2018
 
-@author: oriolrt
-'''
+@author: Oriol Ramos Terrades
+@email: oriol.ramos@uab.cat
 
-import os
+copyrigth: 2018, Oriol Ramos Terrades
+
+Aquest script forma part del material didàctic de l'assignatura de Gestió i Administració de Bases de Dades (GABD) de la Universitat Autònoma de Barcelona. Les classes `AbsConnection` i `GABDSSHTunnel` proporcionen una base per a la gestió de connexions a bases de dades i la configuració de túnels SSH, respectivament. Aquestes eines són essencials per a l'administració segura i eficient de bases de dades en entorns distribuïts.
+"""
+
+from abc import ABC, abstractmethod
 
 
-import numpy as np
+from sshtunnel import SSHTunnelForwarder
+from getpass import getpass
 
-class AbsConnection:
+class GABDSSHTunnel:
+    """
+    Classe per gestionar túnels SSH per a connexions a bases de dades.
+    """
+
+    __slots__ = ['_hostname', '_port', '_ssh_data', '_server']
+    def __init__(self, hostname, port, ssh_data=None,**kwargs):
+        '''
+        Constructor per inicialitzar el túnel SSH amb els paràmetres donats.
+
+        Paràmetres:
+        -----------
+        hostname : str
+            Nom de l'host o adreça IP del servidor SSH.
+        port : int
+            Port del servidor SSH.
+        ssh_data : dict, opcional
+            Informació d'autenticació SSH.
+        '''
+        self._hostname = hostname
+        self._port = port if port is not None else 22
+        self._ssh_data = ssh_data
+        self._server = None
+
+    @property
+    def ssh(self):
+      return self._ssh_data
+
+    @ssh.setter
+    def ssh(self, valor: dict):
+      self._ssh_data = valor
+
+    @property
+    def server(self):
+        return self._server
+
+    @server.setter
+    def server(self, value):
+        self._server = value
+
+    @property
+    def hostname(self):
+      return self._hostname
+
+    @hostname.setter
+    def hostname(self, valor: str):
+      self._hostname = valor
+
+    @property
+    def port(self):
+      return self._port
+
+    @port.setter
+    def port(self, valor: str):
+      self._port = valor
+
+    def openTunnel(self):
+      """
+      Obre un túnel SSH utilitzant la informació d'autenticació proporcionada.
+
+      Retorna:
+      --------
+      None
+      """
+      if self._ssh_data is not None:
+        ssh_data = self._ssh_data
+        if ssh_data is not None:
+          if "id_key" in ssh_data:
+            self._server = SSHTunnelForwarder(
+                (ssh_data["ssh"], int(ssh_data['port'])),
+                ssh_username=ssh_data["user"],
+                ssh_pkey=ssh_data["id_key"],
+                remote_bind_address=(self._hostname, int(self._port)),
+                local_bind_address=("", int(ssh_data['port']))
+            )
+          else:
+            if "pwd" in ssh_data:
+              if ssh_data["pwd"] == "" or ssh_data["pwd"] is None:
+                ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
+            else:
+              ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
+
+            self._server = SSHTunnelForwarder(
+                (ssh_data["ssh"], int(ssh_data['port'])),
+                ssh_username=ssh_data["user"],
+                ssh_password=ssh_data["pwd"],
+                remote_bind_address=(self._hostname, int(self._port)),
+                local_bind_address=("", int(ssh_data['port']))
+            )
+
+          self._server.start()
+
+    def closeTunnel(self):
+        """
+        Tanca el túnel SSH obert.
+
+        Retorna:
+        --------
+        None
+        """
+        if self._server is not None:
+            self._server.stop()
+            self._server = None
+            print(f"Connexió SSH a {self._hostname} tancada.")
+
+class AbsConnection(ABC,  GABDSSHTunnel):
   """
-  This abstract class stores basic connection information and methods to connect to DBMS
-
+  Aquesta classe abstracta emmagatzema informació bàsica de connexió i mètodes per connectar-se a DBMS.
   """
 
-  __slots__ = ['__hostname', '__conn', '__bd', '__isStarted','__ssh', '__user','__pwd','__port','__server']
+  __slots__ = ['_conn',  '_isStarted', '_user','_pwd']
 
   def __init__(self,**params):
     '''
-        Constructor
-        '''
+    Constructor per inicialitzar la connexió amb els paràmetres donats.
 
-    self.__conn = 0
-    self.__bd = None
-    self.__isStarted = False
-    self.__server = None
-    self.__hostname = params.pop('hostname','localhost')
-    self.__user = params.pop('user',None)
-    self.__pwd = params.pop('passwd',None)
-    self.__port = params.pop('port',None)
-    self.__ssh = params.pop('ssh',None)
+    Paràmetres:
+    -----------
+    **params : dict
+        Paràmetres de connexió, incloent `user`, `passwd`, `hostname` i `port`.
+    '''
 
+    self._conn = None
+    self._isStarted = False
+    self._user = params.pop('user', None)
+    self._pwd = params.pop('passwd',None)
+    hostname = params.pop('hostname', 'localhost')
+    port = params.pop('port', None)
 
-  @property
-  def bd(self):
-    return self.__bd
+    GABDSSHTunnel.__init__(self, hostname, port, **params)
 
-  @bd.setter
-  def bd(self, nameBD : str):
-    self.__bd = nameBD
 
   @property
   def conn(self):
-    return self.__conn
+    return self._conn
 
   @conn.setter
   def conn(self, valor):
-    self.__conn = valor
-    self.__isStarted = True
+    self._conn = valor
+    self._isStarted = True
 
   @property
   def server(self):
-    return self.__server
+    return self._server
 
   @server.setter
   def server(self, server : object):
-    self.__server = server
+    self._server = server
 
   @property
   def isStarted(self):
-    return self.__isStarted
+    return self._isStarted
 
-
-  @property
-  def hostname(self):
-    return self.__hostname
-
-  @hostname.setter
-  def hostname(self, valor : str):
-    self.__hostname = valor
+  @isStarted.setter
+  def isStarted(self, valor : bool):
+    self._isStarted = valor
 
   @property
   def user(self):
-    return self.__user
+    return self._user
 
   @user.setter
   def user(self, valor : str):
-    self.__user = valor
+    self._user = valor
 
-  @property
-  def port(self):
-    return self.__port
-
-  @port.setter
-  def port(self, valor : str):
-    self.__port = valor
 
   @property
   def pwd(self):
-    return self.__pwd
+    return self._pwd
 
   @pwd.setter
   def pwd(self, valor : str):
-    self.__pwd = valor
+    self._pwd = valor
 
-  @property
-  def ssh(self):
-    return self.__ssh
+  def __str__(self):
+    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd}"
 
-  @ssh.setter
-  def ssh(self, valor : dict):
-    self.__ssh = valor
-
+  def __repr__(self):
+    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd}"
 
   def  __getitem__(self, item):
     return self.__getattribute__(item)
@@ -111,24 +202,51 @@ class AbsConnection:
   def __setitem__(self, key, value):
     self.__setattr__(key, value)
 
-
+  @abstractmethod
   def open(self):
     """
-      Connect to a DBMS server given the connexion information saved on the cfg member variable.
+    Connecta a un servidor DBMS amb la informació de connexió guardada.
 
-      :return: None
+    Retorna:
+    --------
+    None
     """
 
-    print("""Ara ens estariem conectant al servidor...""")
-    self.__isStarted = True
+    super().openTunnel()  # Obre el túnel SSH
 
-    return self.__isStarted
+    self._isStarted = True
 
+    return self._isStarted
 
+  @abstractmethod
   def close(self):
-    self.__isStarted = False
+    """
+    Tanca la connexió al servidor DBMS.
 
+    Retorna:
+    --------
+    None
+    """
+    self._isStarted = False
 
   def commit(self):
+    """
+      Fa un commit de la transacció actual.
+
+      Retorna:
+      --------
+      None
+    """
     pass
 
+  @abstractmethod
+  def testConnection(self):
+    """
+      Prova la connexió al servidor DBMS.
+
+      Retorna:
+      --------
+      bool
+          True si la connexió és correcta, False en cas contrari.
+    """
+    pass

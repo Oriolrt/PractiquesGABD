@@ -1,120 +1,150 @@
 # -*- coding: utf-8 -*-
-u'''
+u"""
 Created on Jun 12, 2018
 
-@author: oriolrt
-'''
+@author: Oriol Ramos Terrades
+@email: oriol.ramos@uab.cat
 
-import glob
-import numpy as np
-import os
-import re
-import struct
+copyrigth: 2018, Oriol Ramos Terrades
+
+Aquest script forma part del material didàctic de l'assignatura de Gestió i Administració de Bases de Dades (GABD) de la Universitat Autònoma de Barcelona. La classe `oracleConnection` proporciona una implementació específica per a la gestió de connexions a bases de dades Oracle, incloent la configuració i manteniment de les connexions. Aquesta eina és essencial per a l'administració segura i eficient de bases de dades Oracle en entorns distribuïts.
+"""
+
 
 from getpass import getpass
 import logging
-import pandas as pd
 import oracledb
-from sshtunnel import SSHTunnelForwarder
 
-from . import AbsConnection as AC
-
+from .AbsConnection import AbsConnection
 
 
-
-class oracleConnection(AC.AbsConnection):
+class oracleConnection(AbsConnection):
   '''
-    classdocs
-    '''
+  Classe per gestionar la connexió a una base de dades Oracle.
 
-  __slots__ = ['__cursor','__serviceName']
+  Atributs:
+  ----------
+  _cursor : oracledb.Cursor
+      Cursor per executar procediments i consultes.
+  _serviceName : str
+      Nom del servei de la base de dades.
+  _dsn : str
+      Data Source Name per a la connexió a la base de dades.
+  '''
+
+  __slots__ = ['_cursor','_serviceName','_dsn']
 
   def __init__(self, **params):
     '''
-        Constructor
-        '''
+    Constructor per inicialitzar la connexió Oracle.
+
+    Paràmetres:
+    -----------
+    **params : dict
+        Paràmetres de connexió, incloent `serviceName` i `port`.
+     '''
+
+    self._cursor = None
+    self._serviceName = params.pop('serviceName', 'orcl')
     params['port'] = params.pop('port', 1521)
-    super(oracleConnection, self).__init__(**params)
 
-    self.__serviceName=params.pop('serviceName','orcl')
 
-    self.__cursor = None
+    AbsConnection.__init__(self,**params)
 
-  def cursor(self):
+    self._dsn = f"{self.user}/{self.pwd}@localhost:{self.ssh['port']}/{self._serviceName}"
+
+
+
+
+  @property
+  def cursor(self) -> oracledb.DB_TYPE_CURSOR:
+    '''
+    Retorna el cursor de la connexió Oracle.
+
+    Retorna:
+    --------
+    oracledb.Cursor
+        El cursor de la connexió.
+    '''
     try:
-      self.__cursor.callproc("dbms_output.enable")
-      return self.__cursor
+      self._cursor.callproc("dbms_output.enable")
+      return self._cursor
+    except oracledb.DatabaseError:
+      logging.warning('Database connection already closed')
+
+  @cursor.setter
+  def cursor(self, value):
+    '''
+    Estableix el cursor de la connexió Oracle.
+
+    Paràmetres:
+    -----------
+    value : oracledb.Cursor
+        El nou cursor per a la connexió.
+    '''
+    self._cursor = value
+    try:
+      self._cursor.callproc("dbms_output.enable")
     except oracledb.DatabaseError:
       logging.warning('Database connection already closed')
 
 
-
-  def open(self):
+  def open(self) -> None:
     """
       Connect to a oracle server given the connexion information saved on the cfg member variable.
 
       :return: None
     """
 
-    ssh_data = self.ssh
-
-    if self.pwd is None:
-      self.pwd = getpass(prompt="Password de l'usuari {} d'Oracle: ".format(self.user))
-
-    DSN = "{}/{}@localhost:{}/{}".format(self.user, self.pwd, ssh_data['port'], self.__serviceName)
-
-    if ssh_data is not None:
-      if "id_key" in ssh_data:
-        self.server = SSHTunnelForwarder((ssh_data["ssh"], int(ssh_data['port'])),
-                                         ssh_username=ssh_data["user"],
-                                         ssh_pkey=ssh_data["id_key"],
-                                         remote_bind_address=(self.hostname, int(self.port)),
-                                         local_bind_address=("", int(ssh_data['port']))
-                                         )
-      else:
-        if "pwd" in ssh_data:
-          if ssh_data["pwd"] == "" or ssh_data["pwd"] is None:
-            ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
-        else:
-          ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
-
-        self.server = SSHTunnelForwarder((ssh_data["ssh"], int(ssh_data['port'])),
-                                       ssh_username=ssh_data["user"],
-                                       ssh_password=ssh_data["pwd"],
-                                       remote_bind_address=(self.hostname, int(self.port)),
-                                       local_bind_address=("", int(ssh_data['port']))
-                                       )
-
-
-      self.server.start()
-
-
-    else:
-      DSN = "{}/{}@{}:{}/{}".format(self.user, self.pwd, self.hostname, self.port,self.__serviceName)
+    AbsConnection.open(self)
 
     try:
-      self.conn = oracledb.connect(DSN)
-      self.__cursor = self.conn.cursor()
+      self.conn = oracledb.connect(self._dsn)
+      self.cursor = self.conn.cursor()
+      self.isStarted = True
     except oracledb.DatabaseError:
-      self.server.stop()
+      self.closeTunnel()
+      self.isStarted = False
+      logging.error(f"Error connecting to the database with dsn: {self._dsn}")
 
 
+  def close(self) -> None:
+    '''
+    Tanca la connexió a la base de dades Oracle.
 
-  def close(self):
+    Retorna:
+    --------
+    None
+    '''
     try:
       self.conn.close()
-      if self.server is not None:  self.server.stop()
+      self.closeTunnel()
+      self.isStarted = False
       logging.warning('Database connection closed.')
     except oracledb.DatabaseError:
       logging.warning('Database connection already closed')
 
 
+  def commit(self) -> None:
+    '''
+    Fa un commit de la transacció actual.
 
-  def commit(self):
+    Retorna:
+    --------
+    None
+    '''
     self.conn.commit()
 
-  def testConnection(self):
-    cur = self.__cursor
+  def testConnection(self) -> bool:
+    '''
+    Prova la connexió a la base de dades Oracle.
+
+    Retorna:
+    --------
+    bool
+        True si la connexió és correcta, False en cas contrari.
+    '''
+    cur = self._cursor
 
     res = cur.execute("""SELECT sys_context('USERENV','SESSION_USER')  as "CURRENT USER" ,
                       sys_context('USERENV', 'CURRENT_SCHEMA') as "CURRENT SCHEMA"
@@ -124,13 +154,26 @@ class oracleConnection(AC.AbsConnection):
 
     return True
 
-  def startSession(self):
-    self.connectDB
-    self._noConnection__isStarted = True
-    return True
+  def startSession(self) -> bool:
+    '''
+    Inicia una sessió amb la base de dades Oracle.
 
-  def _showMessages(self):
+    Retorna:
+    --------
+    bool
+        True si la sessió s'ha iniciat correctament, False en cas contrari.
+  '''
+    self.open()
+    return self.isStarted
 
+  def showMessages(self) -> None:
+    '''
+    Mostra els missatges de sortida de la base de dades Oracle.
+
+    Retorna:
+    --------
+    None
+    '''
     statusVar = self.cursor.var(oracledb.NUMBER)
     lineVar = self.cursor.var(oracledb.STRING)
     while True:
