@@ -50,6 +50,19 @@ class OracleConnectTestCase(unittest.TestCase):
     db.close()
     self.assertEqual(False, self.client.isStarted,
                      f"Database should be close and is {self.client.isStarted}")  # add assertion here
+  def test_consulta_basica_connection(self):
+    self.client.open()
+    self.assertIsNotNone(self.client, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
+
+    cursor = self.client.conn.cursor()
+    sql = "SELECT 'X' as X  FROM DUAL"
+
+    res = cursor.execute(sql)
+    for row in res:
+      print(row)
+
+    self.client.close()
+    self.assertEqual(False, self.client.isStarted, f"Database should be close and is {self.client.isStarted}")  # add assertion here
 
 
 if __name__ == '__main__':

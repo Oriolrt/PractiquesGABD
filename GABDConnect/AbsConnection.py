@@ -20,8 +20,10 @@ class GABDSSHTunnel:
     """
     Classe per gestionar túnels SSH per a connexions a bases de dades.
     """
+    _server = None
+    _num_connections = 0
 
-    __slots__ = ['_hostname', '_port', '_ssh_data', '_server']
+    __slots__ = ['_hostname', '_port', '_ssh_data']
     def __init__(self, hostname, port, ssh_data=None,**kwargs):
         '''
         Constructor per inicialitzar el túnel SSH amb els paràmetres donats.
@@ -38,7 +40,7 @@ class GABDSSHTunnel:
         self._hostname = hostname
         self._port = port if port is not None else 22
         self._ssh_data = ssh_data
-        self._server = None
+
 
     @property
     def ssh(self):
@@ -54,7 +56,7 @@ class GABDSSHTunnel:
 
     @server.setter
     def server(self, value):
-        self._server = value
+        _server = value
 
     @property
     def hostname(self):
@@ -84,12 +86,12 @@ class GABDSSHTunnel:
         ssh_data = self._ssh_data
         if ssh_data is not None:
           if "id_key" in ssh_data:
-            self._server = SSHTunnelForwarder(
+            GABDSSHTunnel._server = SSHTunnelForwarder(
                 (ssh_data["ssh"], int(ssh_data['port'])),
                 ssh_username=ssh_data["user"],
                 ssh_pkey=ssh_data["id_key"],
                 remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(ssh_data['port']))
+                local_bind_address=("", int(self._port))
             )
           else:
             if "pwd" in ssh_data:
@@ -98,15 +100,17 @@ class GABDSSHTunnel:
             else:
               ssh_data["pwd"] = getpass(prompt="Password de l'usuari {} a {}: ".format(ssh_data["user"], ssh_data["ssh"]))
 
-            self._server = SSHTunnelForwarder(
+            GABDSSHTunnel._server = SSHTunnelForwarder(
                 (ssh_data["ssh"], int(ssh_data['port'])),
                 ssh_username=ssh_data["user"],
                 ssh_password=ssh_data["pwd"],
                 remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(ssh_data['port']))
+                local_bind_address=("", int(self._port))
             )
 
-          self._server.start()
+          if GABDSSHTunnel._num_connections == 0:
+            GABDSSHTunnel._server.start()
+            GABDSSHTunnel._num_connections += 1
 
     def closeTunnel(self):
         """
@@ -116,9 +120,12 @@ class GABDSSHTunnel:
         --------
         None
         """
-        if self._server is not None:
-            self._server.stop()
-            self._server = None
+        if GABDSSHTunnel._server is not None:
+            if GABDSSHTunnel._num_connections > 0:
+                GABDSSHTunnel._num_connections -= 1
+            if GABDSSHTunnel._num_connections == 0:
+              GABDSSHTunnel._server.stop()
+              _server = None
             print(f"Connexió SSH a {self._hostname} tancada.")
 
 class AbsConnection(ABC,  GABDSSHTunnel):

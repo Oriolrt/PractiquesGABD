@@ -13,7 +13,7 @@ Aquest script forma part del material didàctic de l'assignatura de Gestió i Ad
 
 from getpass import getpass
 import logging
-import oracledb
+from oracledb import *
 
 from .AbsConnection import AbsConnection
 
@@ -51,13 +51,13 @@ class oracleConnection(AbsConnection):
 
     AbsConnection.__init__(self,**params)
 
-    self._dsn = f"{self.user}/{self.pwd}@localhost:{self.ssh['port']}/{self._serviceName}"
+    self._dsn = f"{self.user}/{self.pwd}@localhost:{self.port}/{self._serviceName}"
 
 
 
 
   @property
-  def cursor(self) -> oracledb.DB_TYPE_CURSOR:
+  def cursor(self) -> DB_TYPE_CURSOR:
     '''
     Retorna el cursor de la connexió Oracle.
 
@@ -69,7 +69,7 @@ class oracleConnection(AbsConnection):
     try:
       self._cursor.callproc("dbms_output.enable")
       return self._cursor
-    except oracledb.DatabaseError:
+    except DatabaseError:
       logging.warning('Database connection already closed')
 
   @cursor.setter
@@ -85,7 +85,7 @@ class oracleConnection(AbsConnection):
     self._cursor = value
     try:
       self._cursor.callproc("dbms_output.enable")
-    except oracledb.DatabaseError:
+    except DatabaseError:
       logging.warning('Database connection already closed')
 
 
@@ -99,10 +99,10 @@ class oracleConnection(AbsConnection):
     AbsConnection.open(self)
 
     try:
-      self.conn = oracledb.connect(self._dsn)
-      self.cursor = self.conn.cursor()
+      self.conn = connect(self._dsn)
+      self._cursor = self.conn.cursor()
       self.isStarted = True
-    except oracledb.DatabaseError:
+    except DatabaseError:
       self.closeTunnel()
       self.isStarted = False
       logging.error(f"Error connecting to the database with dsn: {self._dsn}")
@@ -121,7 +121,7 @@ class oracleConnection(AbsConnection):
       self.closeTunnel()
       self.isStarted = False
       logging.warning('Database connection closed.')
-    except oracledb.DatabaseError:
+    except DatabaseError:
       logging.warning('Database connection already closed')
 
 
@@ -174,8 +174,8 @@ class oracleConnection(AbsConnection):
     --------
     None
     '''
-    statusVar = self.cursor.var(oracledb.NUMBER)
-    lineVar = self.cursor.var(oracledb.STRING)
+    statusVar = self.cursor.var(NUMBER)
+    lineVar = self.cursor.var(STRING)
     while True:
       self.cursor.callproc("dbms_output.get_line", (lineVar, statusVar))
       if statusVar.getvalue() != 0:
