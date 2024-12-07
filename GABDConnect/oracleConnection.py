@@ -120,7 +120,6 @@ class oracleConnection(AbsConnection):
       self.conn.close()
       self.closeTunnel()
       self.isStarted = False
-      logging.warning('Database connection closed.')
     except DatabaseError:
       logging.warning('Database connection already closed')
 
