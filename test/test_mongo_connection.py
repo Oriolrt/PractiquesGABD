@@ -62,6 +62,17 @@ class MongoConnectTestCase(unittest.TestCase):
     # Comprovem que la connexió es tanca correctament
     self.assertIsNone(self.client.conn, "MongoDB client should be closed")
 
+  def test_user_data_connection_without_authentication(self):
+    self.hostname = "mongo-1.grup00.gabd"
+    self.user = ""
+    self.pwd = ""
+    self.client = mongoConnection(user=self.user, pwd=self.pwd  ,hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, db=self.db)
+    self.client.open()
+    db = self.client.conn[self.client.bd_name]
+    self.assertIsNotNone(db,
+                         f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
+    self.client.close()
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -10,13 +10,7 @@ copyrigth: 2018, Oriol Ramos Terrades
 Aquest script és part del material didàctic de l'assignatura de Gestió i Administració de Bases de Dades (GABD) de la Universitat Autònoma de Barcelona. La classe `mongoConnection` és una eina poderosa dissenyada per facilitar la connexió i gestió de bases de dades MongoDB. Amb aquesta classe, els estudiants aprendran a establir connexions segures, gestionar sessions i interactuar amb bases de dades NoSQL, habilitats essencials per a l'administració moderna de bases de dades en entorns distribuïts i escalables.
 """
 
-import glob
-import os
-import re
-from pymongo import MongoClient, errors
-import struct
-from getpass import getpass
-import logging
+from pymongo import *
 
 from .AbsConnection import AbsConnection
 
@@ -46,6 +40,8 @@ class mongoConnection(AbsConnection):
     hostname, params['port'] = params.pop('hostname', 'localhost'), params.pop('port', 27017)
 
     AbsConnection.__init__(self,**params)
+
+    self._auth_activated = self.user is not None and (isinstance(self.user,str) and len(self.user) > 0)
 
     if not self._auth_activated:
       self._mongo_uri = f"mongodb://{hostname}:{params['port']}/{self._auth_db}"
