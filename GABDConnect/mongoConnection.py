@@ -11,7 +11,7 @@ Aquest script és part del material didàctic de l'assignatura de Gestió i Admi
 """
 
 from pymongo import MongoClient, errors
-
+from pymongo.errors import ServerSelectionTimeoutError
 
 from .AbsConnection import AbsConnection
 
@@ -86,7 +86,7 @@ class mongoConnection(AbsConnection):
       self.isStarted = True
       self.bd = self.conn[self.bd_name]
       print("Connexió a MongoDB oberta.")
-    except errors.ServerSelectionTimeoutError as err:
+    except ServerSelectionTimeoutError as err:
       self.isStarted = False
       # do whatever you need
       print(err)

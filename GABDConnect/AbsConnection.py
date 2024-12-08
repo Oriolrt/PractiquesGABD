@@ -39,7 +39,7 @@ class GABDSSHTunnel:
         '''
         self._hostname = hostname
         self._port = port if port is not None else 22
-        self._local_port = kwargs.pop('local_port',self._port)
+        self._local_port = int(kwargs.pop('local_port',self._port))
         self._ssh_data = ssh_data
 
 
