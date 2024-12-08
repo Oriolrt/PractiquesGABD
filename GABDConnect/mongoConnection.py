@@ -87,6 +87,7 @@ class mongoConnection(AbsConnection):
       self.bd = self.conn[self.bd_name]
       print("Connexió a MongoDB oberta.")
     except ServerSelectionTimeoutError as err:
+      self.closeTunnel()
       self.isStarted = False
       # do whatever you need
       print(err)
