@@ -12,10 +12,11 @@ class OracleConnectTestCase(unittest.TestCase):
     self.serviceName = "FREEPDB1"
     self.user = "ESPECTACLES"
     self.pwd = "ESPECTACLES"
-    self.client = orcl(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, user=self.user,
-                       passwd=self.pwd, serviceName=self.serviceName)
+
 
   def test_sshtunnel_default_connection(self):
+    self.client = orcl(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, user=self.user,
+                       passwd=self.pwd, serviceName=self.serviceName)
     self.client.open()
     self.assertIsNotNone(self.client, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
 
@@ -48,9 +49,12 @@ class OracleConnectTestCase(unittest.TestCase):
       logging.warning("La connexió a {} funciona correctament.".format(hostname))
 
     db.close()
-    self.assertEqual(False, self.client.isStarted,
-                     f"Database should be close and is {self.client.isStarted}")  # add assertion here
+    self.assertEqual(False, db.isStarted,
+                     f"Database should be close and is {db.isStarted}")  # add assertion here
   def test_consulta_basica_connection(self):
+    self._local_port = 1522
+    self.client = orcl(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, user=self.user,
+                       passwd=self.pwd, serviceName=self.serviceName,local_port=self._local_port)
     self.client.open()
     self.assertIsNotNone(self.client, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
 

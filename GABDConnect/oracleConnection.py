@@ -51,7 +51,7 @@ class oracleConnection(AbsConnection):
 
     AbsConnection.__init__(self,**params)
 
-    self._dsn = f"{self.user}/{self.pwd}@localhost:{self.port}/{self._serviceName}"
+    self._dsn = f"{self.user}/{self.pwd}@localhost:{self._local_port}/{self._serviceName}"
 
 
 
@@ -85,10 +85,11 @@ class oracleConnection(AbsConnection):
       self.conn = connect(self._dsn)
       self._cursor = self.conn.cursor()
       self.isStarted = True
-    except DatabaseError:
+    except DatabaseError as e:
       self.closeTunnel()
       self.isStarted = False
       logging.error(f"Error connecting to the database with dsn: {self._dsn}")
+      logging.error(f"Error: {e}")
 
 
   def close(self) -> None:

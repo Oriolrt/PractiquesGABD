@@ -46,11 +46,12 @@ class MongoConnectTestCase(unittest.TestCase):
   def test_mongoDB_crud_basic(self):
     bd_name = "test_mongo"
     col_name = "col_test"
+    local_port = 27018
     data = [{"name": "Oriol", "surname": "Ramos"},
             {"name": "Pere", "surname": "Roca"},
             {"name": "Anna", "surname": "Roca"}]
 
-    self.client = mongoConnection(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, db=self.db)
+    self.client = mongoConnection(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, db=self.db, local_port=local_port)
 
     self.client.open()
     db = self.client.conn[bd_name]
@@ -82,6 +83,7 @@ class MongoConnectTestCase(unittest.TestCase):
 
   def test_user_data_connection_without_authentication(self):
     self.hostname = "mongo-1.grup00.gabd"
+    self.local_port = 27018
     self.user = ""
     self.pwd = ""
     self.client = mongoConnection(user=self.user, pwd=self.pwd  ,hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, db=self.db)

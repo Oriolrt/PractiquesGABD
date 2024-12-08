@@ -116,7 +116,7 @@ class GABDSSHTunnel:
               GABDSSHTunnel._num_connections += 1
               message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
                         f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
-                        f"ssh -L {self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
+                        f"ssh -L localhost:{self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
               print(message)
 
             except Exception as e:
@@ -137,7 +137,7 @@ class GABDSSHTunnel:
                 GABDSSHTunnel._num_connections -= 1
             if GABDSSHTunnel._num_connections == 0:
               GABDSSHTunnel._server.stop()
-              _server = None
+              GABDSSHTunnel._server = None
             print(f"Connexió SSH a {self._hostname} tancada.")
 
 class AbsConnection(ABC,  GABDSSHTunnel):

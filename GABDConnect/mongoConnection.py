@@ -45,9 +45,9 @@ class mongoConnection(AbsConnection):
     self._auth_activated = self.user is not None and (isinstance(self.user,str) and len(self.user) > 0)
 
     if not self._auth_activated:
-      self._mongo_uri = f"mongodb://{params['hostname']}:{params['port']}/{self._auth_db}"
+      self._mongo_uri = f"mongodb://{params['hostname']}:{self._local_port}/{self._auth_db}"
     else:
-      self._mongo_uri = f"mongodb://{params['user']}/{params['pwd']}@{params['hostname']}:{params['port']}/{self._auth_db}"
+      self._mongo_uri = f"mongodb://{params['user']}/{params['pwd']}@{params['hostname']}:{self._local_port}/{self._auth_db}"
 
   @property
   def bd(self):
