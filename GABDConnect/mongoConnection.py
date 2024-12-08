@@ -10,7 +10,8 @@ copyrigth: 2018, Oriol Ramos Terrades
 Aquest script és part del material didàctic de l'assignatura de Gestió i Administració de Bases de Dades (GABD) de la Universitat Autònoma de Barcelona. La classe `mongoConnection` és una eina poderosa dissenyada per facilitar la connexió i gestió de bases de dades MongoDB. Amb aquesta classe, els estudiants aprendran a establir connexions segures, gestionar sessions i interactuar amb bases de dades NoSQL, habilitats essencials per a l'administració moderna de bases de dades en entorns distribuïts i escalables.
 """
 
-from pymongo import *
+from pymongo import MongoClient, errors
+
 
 from .AbsConnection import AbsConnection
 
@@ -37,16 +38,16 @@ class mongoConnection(AbsConnection):
     self._bd_name = params.pop('db_name', 'test')
     self._bd = None
     params["user"] = params.pop('user', None)
-    hostname, params['port'] = params.pop('hostname', 'localhost'), params.pop('port', 27017)
+    params['hostname'], params['port'] = params.pop('hostname', 'localhost'), params.pop('port', 27017)
 
     AbsConnection.__init__(self,**params)
 
     self._auth_activated = self.user is not None and (isinstance(self.user,str) and len(self.user) > 0)
 
     if not self._auth_activated:
-      self._mongo_uri = f"mongodb://{hostname}:{params['port']}/{self._auth_db}"
+      self._mongo_uri = f"mongodb://{params['hostname']}:{params['port']}/{self._auth_db}"
     else:
-      self._mongo_uri = f"mongodb://{params['user']}/{params['pwd']}@{hostname}:{params['port']}/{self._auth_db}"
+      self._mongo_uri = f"mongodb://{params['user']}/{params['pwd']}@{params['hostname']}:{params['port']}/{self._auth_db}"
 
   @property
   def bd(self):

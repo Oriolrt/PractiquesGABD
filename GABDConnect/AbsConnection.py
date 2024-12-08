@@ -23,7 +23,7 @@ class GABDSSHTunnel:
     _server = None
     _num_connections = 0
 
-    __slots__ = ['_hostname', '_port', '_ssh_data']
+    __slots__ = ['_hostname', '_port', '_ssh_data','_local_port']
     def __init__(self, hostname, port, ssh_data=None,**kwargs):
         '''
         Constructor per inicialitzar el túnel SSH amb els paràmetres donats.
@@ -39,6 +39,7 @@ class GABDSSHTunnel:
         '''
         self._hostname = hostname
         self._port = port if port is not None else 22
+        self._local_port = kwargs.pop('local_port',self._port)
         self._ssh_data = ssh_data
 
 
@@ -91,7 +92,7 @@ class GABDSSHTunnel:
                 ssh_username=ssh_data["user"],
                 ssh_pkey=ssh_data["id_key"],
                 remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(self._port))
+                local_bind_address=("", int(self._local_port))
             )
           else:
             if "pwd" in ssh_data:
@@ -105,17 +106,23 @@ class GABDSSHTunnel:
                 ssh_username=ssh_data["user"],
                 ssh_password=ssh_data["pwd"],
                 remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(self._port))
+                local_bind_address=("", int(self._local_port))
             )
 
-          message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
-                    f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
-                    f"ssh -L {self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
-          print(message)
 
           if GABDSSHTunnel._num_connections == 0:
-            GABDSSHTunnel._server.start()
-            GABDSSHTunnel._num_connections += 1
+            try:
+              GABDSSHTunnel._server.start()
+              GABDSSHTunnel._num_connections += 1
+              message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
+                        f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
+                        f"ssh -L {self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
+              print(message)
+
+            except Exception as e:
+              print(f"Error al obrir el túnel SSH: {e}")
+
+
 
     def closeTunnel(self):
         """
@@ -203,10 +210,10 @@ class AbsConnection(ABC,  GABDSSHTunnel):
     self._pwd = valor
 
   def __str__(self):
-    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd}"
+    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd if self._bd is not None else '.'}"
 
   def __repr__(self):
-    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd}"
+    return f"Connexió a {self._hostname}:{self._port} amb l'usuari {self._user} a la base de dades {self._bd if self._bd is not None else '.'}"
 
   def  __getitem__(self, item):
     return self.__getattribute__(item)
