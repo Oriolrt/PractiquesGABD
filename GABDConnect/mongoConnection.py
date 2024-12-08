@@ -127,7 +127,7 @@ class mongoConnection(AbsConnection):
     bool
         True si la connexió és correcta, False en cas contrari.
     """
-    dbs = self.conn.database_names()
+    dbs = self.conn.list_database_names()
 
     print("Databases: {}".format(" ".join(dbs)))
 
