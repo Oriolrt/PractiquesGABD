@@ -54,7 +54,7 @@ class OracleConnectTestCase(unittest.TestCase):
     self.client.open()
     self.assertIsNotNone(self.client, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
 
-    cursor = self.client.conn.cursor()
+    cursor = self.client.cursor()
     sql = "SELECT 'X' as X  FROM DUAL"
 
     res = cursor.execute(sql)

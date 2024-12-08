@@ -55,8 +55,6 @@ class oracleConnection(AbsConnection):
 
 
 
-
-  @property
   def cursor(self) -> DB_TYPE_CURSOR:
     '''
     Retorna el cursor de la connexió Oracle.
@@ -67,24 +65,9 @@ class oracleConnection(AbsConnection):
         El cursor de la connexió.
     '''
     try:
+      self._cursor = self.conn.cursor()
       self._cursor.callproc("dbms_output.enable")
       return self._cursor
-    except DatabaseError:
-      logging.warning('Database connection already closed')
-
-  @cursor.setter
-  def cursor(self, value):
-    '''
-    Estableix el cursor de la connexió Oracle.
-
-    Paràmetres:
-    -----------
-    value : oracledb.Cursor
-        El nou cursor per a la connexió.
-    '''
-    self._cursor = value
-    try:
-      self._cursor.callproc("dbms_output.enable")
     except DatabaseError:
       logging.warning('Database connection already closed')
 
