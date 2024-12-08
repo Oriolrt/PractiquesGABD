@@ -104,7 +104,7 @@ class mongoConnection(AbsConnection):
     --------
     None
     """
-    self.conn.close()
+    self.conn = self.conn.close()
     self.closeTunnel()
     self.isStarted = False
 

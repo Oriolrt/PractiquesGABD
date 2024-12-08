@@ -27,11 +27,40 @@ class MongoConnectTestCase(unittest.TestCase):
     self.assertIsNotNone(db, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
     self.client.close()
 
-  def test_mongoDB_tunnel_remote_connection(self):
+  def test_mongoDB_crud_basic(self):
+    bd_name = "test_mongo"
+    col_name = "col_test"
+    data = [{"name": "Oriol", "surname": "Ramos"},
+            {"name": "Pere", "surname": "Roca"},
+            {"name": "Anna", "surname": "Roca"}]
+
     self.client.open()
-    db = self.client.conn[self.client.bd_name]
-    self.assertIsNotNone(db, f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
+    db = self.client.conn[bd_name]
+    # creeem una col·lecció si no existeix
+    try:
+      col = db[col_name]
+    except:
+      col = db.create_collection(col_name)
+
+    # Insertem dades a la col·lecció
+    col.insert_many(data)
+
+    # Check if the data is inserted
+    self.assertEqual(3, col.count_documents({}), "Should be able to insert data in the MongoDB database in {self.hostname} through SSH tunnel")
+
+    # Fem una cerca ala col·lecció
+    for doc in col.find():
+      print(doc)
+
+    # Eliminem un document de la col·lecció
+    col.delete_one({"name": "Anna"})
+
+    # Eliminem la col·lecció
+    db.drop_collection(col_name)
+
     self.client.close()
+    # Comprovem que la connexió es tanca correctament
+    self.assertIsNone(self.client.conn, "MongoDB client should be closed")
 
 
 if __name__ == '__main__':

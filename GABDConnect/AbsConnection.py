@@ -108,6 +108,11 @@ class GABDSSHTunnel:
                 local_bind_address=("", int(self._port))
             )
 
+          message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
+                    f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
+                    f"ssh -L {self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
+          print(message)
+
           if GABDSSHTunnel._num_connections == 0:
             GABDSSHTunnel._server.start()
             GABDSSHTunnel._num_connections += 1
