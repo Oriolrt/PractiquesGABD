@@ -127,9 +127,12 @@ class mongoConnection(AbsConnection):
     bool
         True si la connexió és correcta, False en cas contrari.
     """
-    dbs = self.conn.list_database_names()
-
-    print("Databases: {}".format(" ".join(dbs)))
+    try:
+      dbs = self.conn.list_database_names()
+      print("Databases: {}".format(" ".join(dbs)))
+    except ServerSelectionTimeoutError as err:
+      print(f"error:\n {err}")
+      return False
 
     return True
 
