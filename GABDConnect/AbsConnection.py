@@ -16,6 +16,21 @@ from abc import ABC, abstractmethod
 from sshtunnel import SSHTunnelForwarder
 from getpass import getpass
 
+def _format_multiple_tunnels( mt : dict) -> bool:
+  res = dict()
+  for k,v in mt.items():
+    kk = int(k)
+    if  isinstance(v,str):
+      vv = v.split(':')
+      vv = ( str(vv[0]), int(vv[1]))
+    elif isinstance(v,tuple) and len(v)==2:
+      vv = v
+    else:
+      return None
+    res[kk] = vv
+
+  return res
+
 class GABDSSHTunnel:
     """
     Classe per gestionar túnels SSH per a connexions a bases de dades.
@@ -23,7 +38,7 @@ class GABDSSHTunnel:
     _server = None
     _num_connections = 0
 
-    __slots__ = ['_hostname', '_port', '_ssh_data','_local_port']
+    __slots__ = ['_hostname', '_port', '_ssh_data','_local_port','_mt']
     def __init__(self, hostname, port, ssh_data=None,**kwargs):
         '''
         Constructor per inicialitzar el túnel SSH amb els paràmetres donats.
@@ -41,6 +56,12 @@ class GABDSSHTunnel:
         self._port = port if port is not None else 22
         self._local_port = int(kwargs.pop('local_port',self._port))
         self._ssh_data = ssh_data
+        if 'multiple_tunnels' in kwargs:
+          self._mt = kwargs['multiple_tunnels'].copy()
+          self._mt[self._local_port] = (self._hostname, self._port)
+          self._mt = _format_multiple_tunnels(self._mt)
+        else:
+          self._mt = None
 
 
     @property
@@ -83,6 +104,15 @@ class GABDSSHTunnel:
       --------
       None
       """
+
+      if self._mt is not None:
+        remote_binds = [(remote_host, remote_port) for _, (remote_host, remote_port) in self._mt.items()]
+        local_binds = [("", local_port) for local_port in self._mt.keys()]
+      else:
+        remote_binds = [(self._hostname, int(self._port))]
+        local_binds = [("", int(self._local_port))]
+
+
       if self._ssh_data is not None:
         ssh_data = self._ssh_data
         if ssh_data is not None:
@@ -91,8 +121,8 @@ class GABDSSHTunnel:
                 (ssh_data["ssh"], int(ssh_data['port'])),
                 ssh_username=ssh_data["user"],
                 ssh_pkey=ssh_data["id_key"],
-                remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(self._local_port))
+                remote_bind_addresses=remote_binds,
+                local_bind_addresses=local_binds
             )
           else:
             if "pwd" in ssh_data:
@@ -105,9 +135,14 @@ class GABDSSHTunnel:
                 (ssh_data["ssh"], int(ssh_data['port'])),
                 ssh_username=ssh_data["user"],
                 ssh_password=ssh_data["pwd"],
-                remote_bind_address=(self._hostname, int(self._port)),
-                local_bind_address=("", int(self._local_port))
+                remote_bind_addresses=remote_binds,
+                local_bind_addresses=local_binds
             )
+
+          if self._mt is not None:
+            forwards = "-L ".join([f"{local_port}:{remote_host}:{remote_port}" for local_port, (remote_host, remote_port) in self._mt.items()])
+          else:
+            forwards = f"-L {self._local_port}:{self._hostname}:{self._port}"
 
 
           if GABDSSHTunnel._num_connections == 0:
@@ -116,7 +151,7 @@ class GABDSSHTunnel:
               GABDSSHTunnel._num_connections += 1
               message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
                         f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
-                        f"ssh -L localhost:{self._port}:{self._hostname}:{self._port} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
+                        f"ssh {forwards} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
               print(message)
 
             except Exception as e:
