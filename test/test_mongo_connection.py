@@ -95,6 +95,28 @@ class MongoConnectTestCase(unittest.TestCase):
     # Comprovem que la connexió es tanca correctament
     self.assertIsNone(self.client.conn, "MongoDB client should be closed")
 
+  def test_user_data_connection_with_authentication(self):
+    self.hostname = "main.grup00.gabd"
+    self.local_port = 27017
+    self.user = "gestorGeonames"
+    self.pwd = "gGeonames_pwd"
+    self.bd = "Practica_3"
+
+    self.client = mongoConnection(user=self.user, pwd=self.pwd, hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, db=self.db)
+    self.client.open()
+    db = self.client.conn[self.client.bd_name]
+    self.assertIsNotNone(db,
+                         f"Should be able to connect to the MongoDB database in {self.hostname} through SSH tunnel")
+    #recuperem els 10 primer elements de la col·lecció geonames
+    col = db["geonames"]
+    for doc in col.find().limit(10):
+      print(doc)
+
+    self.client.close()
+    #veriquem que hem tancat la connexió
+    self.assertIsNone(self.client.conn, "MongoDB client should be closed")
+
+
 
 if __name__ == '__main__':
   unittest.main()

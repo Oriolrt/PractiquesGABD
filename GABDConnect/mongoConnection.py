@@ -37,7 +37,7 @@ class mongoConnection(AbsConnection):
     self._auth_activated = params.pop('auth_activated', False)
     self._bd_name = params.pop('db_name', 'test')
     self._bd = None
-    params["user"] = params.pop('user', None)
+    params['user'] = params.pop('user', None)
     params['hostname'], params['port'] = params.pop('hostname', 'localhost'), params.pop('port', 27017)
 
     AbsConnection.__init__(self,**params)
@@ -47,7 +47,7 @@ class mongoConnection(AbsConnection):
     if not self._auth_activated:
       self._mongo_uri = f"mongodb://localhost:{self._local_port}/{self._auth_db}"
     else:
-      self._mongo_uri = f"mongodb://{params['user']}/{params['pwd']}@localhost:{self._local_port}/{self._auth_db}"
+      self._mongo_uri = f"mongodb://{params['user']}:{params['pwd']}@localhost:{self._local_port}/{self._auth_db}"
 
   @property
   def bd(self):
