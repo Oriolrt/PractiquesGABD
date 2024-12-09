@@ -12,7 +12,8 @@ class OracleConnectTestCase(unittest.TestCase):
     self.serviceName = "FREEPDB1"
     self.user = "ESPECTACLES"
     self.pwd = "ESPECTACLES"
-
+    self.multiple_tunnels = {1521: "oracle-1.grup00.gabd:1521", 1522: ("oracle-2.grup00.gabd", 1521),
+                             2222: ("oracle-2.grup00.gabd", 22)}
 
   def test_sshtunnel_default_connection(self):
     self.client = orcl(hostname=self.hostname, port=self.port, ssh_data=self.ssh_server, user=self.user,
@@ -42,7 +43,8 @@ class OracleConnectTestCase(unittest.TestCase):
     serviceName="FREEPDB1"
 
     # Cridem el constructor i obrim la connexió
-    db = orcl(user=user, passwd=oracle_pwd, hostname=hostname, ssh_data=ssh_server,serviceName=serviceName)
+    db = orcl(user=user, passwd=oracle_pwd, hostname=hostname, ssh_data=ssh_server,serviceName=serviceName,
+              multiple_tunnels=self.multiple_tunnels)
     db.open()
 
     if db.testConnection():

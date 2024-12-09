@@ -140,9 +140,9 @@ class GABDSSHTunnel:
             )
 
           if self._mt is not None:
-            forwards = "-L ".join([f"{local_port}:{remote_host}:{remote_port}" for local_port, (remote_host, remote_port) in self._mt.items()])
+            forwards = " -L ".join([f"{local_port}:{remote_host}:{remote_port}" for local_port, (remote_host, remote_port) in self._mt.items()])
           else:
-            forwards = f"-L {self._local_port}:{self._hostname}:{self._port}"
+            forwards = f"  {self._local_port}:{self._hostname}:{self._port}"
 
 
           if GABDSSHTunnel._num_connections == 0:
@@ -151,7 +151,7 @@ class GABDSSHTunnel:
               GABDSSHTunnel._num_connections += 1
               message = f"Connexió SSH a {self._hostname} oberta. S'ha obert un túnel a través de {ssh_data['ssh']} " \
                         f"al port {self._port}. La instrucció equivalent per fer-ho manualment seria: \n" \
-                        f"ssh {forwards} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
+                        f"ssh -L {forwards} {ssh_data['user']}@{ssh_data['ssh']} -p {ssh_data['port']}"
               print(message)
 
             except Exception as e:
